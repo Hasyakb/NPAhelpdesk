@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (getProfile().exists && getProfile().data.role == 'admin') || 
+        (request.auth.token.email == "HASSANYAKUBUBABAGASA@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isICTStaff() {
+      return isAuthenticated() && getProfile().exists && getProfile().data.role == 'ict_staff';
+    }
+
+    function isStaff() {
+      return isAuthenticated() && getProfile().exists && getProfile().data.role == 'staff';
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner(data) {
+      return isAuthenticated() && request.auth.uid == data.createdBy;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role', 'department']) &&
+             data.uid is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.role in ['admin', 'staff', 'ict_staff'] &&
+             data.department is string;
+    }
+
+    function isValidRequest(data) {
+      return data.keys().hasAll(['title', 'description', 'department', 'status', 'createdBy', 'requesterName', 'officeNumber']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.description is string && data.description.size() > 0 && data.description.size() < 2000 &&
+             data.status in ['pending', 'in_progress', 'completed', 'closed', 'reopened'] &&
+             data.createdBy is string &&
+             data.officeNumber is string &&
+             (!('technicianNote' in data) || data.technicianNote is string) &&
+             (!('comments' in data) || data.comments is list);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && isValidUser(request.resource.data);
+      allow update: if (isAdmin() || isOwner(userId)) && isValidUser(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /departments/{deptId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /requests/{requestId} {
+      allow read: if isAuthenticated();
+      
+      allow create: if isAuthenticated() && 
+                      isValidRequest(request.resource.data) && 
+                      request.resource.data.createdBy == request.auth.uid &&
+                      request.resource.data.status == 'pending';
+      
+      allow update: if isAuthenticated() && 
+                      isValidRequest(request.resource.data) && (
+                        // Admin can update anything
+                        isAdmin() ||
+                        // Staff can update their own requests (confirm/reopen or add comments)
+                        (isDocOwner(resource.data) && (
+                          (resource.data.status == 'completed' && request.resource.data.status in ['closed', 'reopened']) ||
+                          (resource.data.status == request.resource.data.status && resource.data.status != 'closed')
+                        )) ||
+                        // ICT Staff can update assigned requests (complete or add comments)
+                        (isICTStaff() && resource.data.assignedTo == request.auth.uid && (
+                          (request.resource.data.status in ['in_progress', 'completed']) ||
+                          (resource.data.status == request.resource.data.status && resource.data.status != 'closed')
+                        ))
+                      );
+      
+      allow delete: if isAdmin();
+    }
+  }
+}

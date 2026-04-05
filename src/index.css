@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-npa-green: #006633;
+  --color-npa-green-hover: #00552b;
+  --color-npa-gold: #FFCC00;
+}
+
+/* Enable class-based dark mode in Tailwind 4 */
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  body {
+    @apply bg-[#f5f5f7] text-[#1d1d1f] antialiased transition-colors duration-300;
+  }
+
+  .dark body {
+    @apply bg-[#000000] text-[#f5f5f7];
+  }
+}
+
+.glass {
+  @apply bg-white/70 dark:bg-black/70 backdrop-blur-md border border-white/20 dark:border-white/10;
+}
+
+.apple-shadow {
+  box-shadow: 0 8px 30px rgb(0,0,0,0.04);
+}
+
+.apple-shadow-hover {
+  @apply transition-shadow duration-500;
+}
+
+.apple-shadow-hover:hover {
+  box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+}

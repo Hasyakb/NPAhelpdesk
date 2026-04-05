@@ -1,0 +1,53 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User profile information with role-based access control.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "staff", "ict_staff"] },
+        "department": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "email", "role", "department"]
+    },
+    "HelpRequest": {
+      "title": "Help Request",
+      "description": "ICT support request submitted by staff.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "department": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "closed", "reopened"] },
+        "createdBy": { "type": "string" },
+        "requesterName": { "type": "string" },
+        "assignedTo": { "type": "string" },
+        "assignedToName": { "type": "string" },
+        "officeNumber": { "type": "string" },
+        "feedback": { "type": "string" },
+        "rating": { "type": "integer" },
+        "confirmedByUser": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "confirmedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "department", "status", "createdBy", "requesterName", "officeNumber"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Collection of user profiles."
+    },
+    "/requests/{requestId}": {
+      "schema": "HelpRequest",
+      "description": "Collection of support requests."
+    }
+  }
+}
